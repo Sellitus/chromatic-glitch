@@ -1,4 +1,4 @@
-export class GameState {
+class GameState {
   constructor() {
     this.state = {
       screen: 'title', // title, game, combat, inventory
@@ -125,3 +125,5 @@ export class GameState {
     this.state.combat.selectedTarget = null;
   }
 }
+
+module.exports = { GameState };

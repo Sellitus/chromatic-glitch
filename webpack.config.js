@@ -8,6 +8,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
     clean: true,
+    publicPath: '/',
   },
   module: {
     rules: [
@@ -37,11 +38,20 @@ module.exports = {
     })
   ],
   devServer: {
-    static: {
-      directory: path.join(__dirname, 'dist'),
+    static: [
+      {
+        directory: path.join(__dirname, 'src'),
+        publicPath: '/',
+        serveIndex: true,
+        watch: true
+      }
+    ],
+    devMiddleware: {
+      publicPath: '/'
     },
     compress: true,
     port: 9000,
-    hot: true
+    hot: true,
+    historyApiFallback: true
   }
 };

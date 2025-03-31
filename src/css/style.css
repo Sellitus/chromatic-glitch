@@ -1,14 +1,79 @@
-body {
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #1a1a1a;
+/* Reset default margins and padding */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-#gameCanvas {
-  border: 1px solid #333;
-  background-color: #000;
+/* Basic styling */
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+}
+
+/* Center canvas container */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Canvas styling */
+canvas {
+    border: 1px solid #333;
+    background-color: #111;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Loading screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 0.5s ease-out;
+}
+
+.loading-progress {
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #222;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #4a9eff, #9e4aff);
+    transition: width 0.3s ease-out;
+}
+
+.progress-text {
+    color: #fff;
+    font-size: 16px;
+    text-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+}
+
+/* Hide loading screen when loading is complete */
+.loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
 }

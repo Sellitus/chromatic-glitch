@@ -1,0 +1,7 @@
+{
+    "testData": {
+        "id": 1,
+        "name": "Test Asset",
+        "description": "This is a test JSON asset"
+    }
+}
