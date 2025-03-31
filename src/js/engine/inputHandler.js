@@ -19,6 +19,7 @@ export default class InputHandler {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
+    this.preventDefaultForGameKeys = this.preventDefaultForGameKeys.bind(this);
   }
 
   /**
@@ -26,21 +27,17 @@ export default class InputHandler {
    * @param {HTMLElement} target - Element to attach listeners to
    */
   init(target) {
+    this.target = target;
+    
     // Keyboard events
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
+    window.addEventListener('keydown', this.preventDefaultForGameKeys);
 
     // Mouse events
-    target.addEventListener('mousemove', this.handleMouseMove);
-    target.addEventListener('mousedown', this.handleMouseDown);
-    target.addEventListener('mouseup', this.handleMouseUp);
-
-    // Prevent default browser actions for game keys
-    window.addEventListener('keydown', (event) => {
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
-        event.preventDefault();
-      }
-    });
+    this.target.addEventListener('mousemove', this.handleMouseMove);
+    this.target.addEventListener('mousedown', this.handleMouseDown);
+    this.target.addEventListener('mouseup', this.handleMouseUp);
   }
 
   /**
@@ -49,9 +46,24 @@ export default class InputHandler {
   destroy() {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
-    window.removeEventListener('mousemove', this.handleMouseMove);
-    window.removeEventListener('mousedown', this.handleMouseDown);
-    window.removeEventListener('mouseup', this.handleMouseUp);
+    window.removeEventListener('keydown', this.preventDefaultForGameKeys);
+    
+    if (this.target) {
+      this.target.removeEventListener('mousemove', this.handleMouseMove);
+      this.target.removeEventListener('mousedown', this.handleMouseDown);
+      this.target.removeEventListener('mouseup', this.handleMouseUp);
+    }
+  }
+
+  /**
+   * Prevent default browser actions for game keys
+   * @private
+   * @param {KeyboardEvent} event - Keyboard event
+   */
+  preventDefaultForGameKeys(event) {
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
+      event.preventDefault();
+    }
   }
 
   /**
