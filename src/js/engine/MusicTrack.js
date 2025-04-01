@@ -101,11 +101,34 @@ export class MusicTrack {
    * @param {string} url URL to the audio file
    */
   async addStem(name, url) {
+    if (!name || typeof name !== 'string') {
+      throw new Error('Invalid stem name');
+    }
+    if (!url || typeof url !== 'string') {
+      throw new Error('Invalid URL');
+    }
+    if (this.stems.has(name)) {
+      console.warn(`Stem "${name}" already exists, it will be replaced`);
+    }
+
     try {
-      const buffer = await this.audioEngine.loadAudioBuffer(url);
-      const stem = new Stem(name, buffer, this.audioEngine);
-      this.stems.set(name, stem);
-      return stem;
+      // First try to load the audio buffer
+      const buffer = await this.audioEngine.loadAudioBuffer(url).catch(error => {
+        throw new Error(`Failed to load audio for stem "${name}": ${error.message}`);
+      });
+
+      if (!buffer) {
+        throw new Error(`No audio data received for stem "${name}"`);
+      }
+
+      // Then create and initialize the stem
+      try {
+        const stem = new Stem(name, buffer, this.audioEngine);
+        this.stems.set(name, stem);
+        return stem;
+      } catch (stemError) {
+        throw new Error(`Failed to initialize stem "${name}": ${stemError.message}`);
+      }
     } catch (error) {
       console.error(`Error loading stem ${name}:`, error);
       throw error;

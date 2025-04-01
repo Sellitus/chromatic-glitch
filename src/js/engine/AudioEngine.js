@@ -130,16 +130,25 @@ export class AudioEngine {
     // Effects Chain Routing
     connectNodes(nodes) {
         if (!this.audioContext) return;
+        if (!Array.isArray(nodes) || nodes.length < 2) {
+            console.warn("Invalid nodes array provided to connectNodes");
+            return;
+        }
+
+        // Check if any node in the chain is invalid
+        for (const node of nodes) {
+            if (!node || typeof node.connect !== 'function') {
+                console.warn("Invalid node in chain, aborting connection");
+                return;
+            }
+        }
+
+        // All nodes are valid, connect them in sequence
         for (let i = 0; i < nodes.length - 1; i++) {
-            if (nodes[i] && nodes[i+1]) {
-                if (typeof nodes[i].connect === 'function') {
-                    nodes[i].connect(nodes[i+1]);
-                } else {
-                    console.warn("Node is not connectable:", nodes[i]);
-                    break;
-                }
-            } else {
-                console.warn("Skipping connection due to null node in chain:", nodes);
+            try {
+                nodes[i].connect(nodes[i + 1]);
+            } catch (error) {
+                console.error(`Error connecting nodes at index ${i}:`, error);
                 break;
             }
         }
@@ -226,14 +235,30 @@ export class AudioEngine {
     // Audio Loading
     async loadAudioBuffer(url) {
         if (!this.audioContext) {
-            return Promise.reject("AudioContext not initialized");
+            console.error("Cannot load audio: AudioContext not initialized");
+            return Promise.reject(new Error("AudioContext not initialized"));
         }
+
         try {
             const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status} for ${url}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} for ${url}`);
+            }
+
             const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-            return audioBuffer;
+            if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                throw new Error(`Invalid or empty audio data received from ${url}`);
+            }
+
+            try {
+                const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                if (!audioBuffer) {
+                    throw new Error("Decoded audio buffer is null");
+                }
+                return audioBuffer;
+            } catch (decodeError) {
+                throw new Error(`Failed to decode audio data from ${url}: ${decodeError.message}`);
+            }
         } catch (error) {
             console.error(`Error loading/decoding audio buffer from ${url}:`, error);
             throw error;
