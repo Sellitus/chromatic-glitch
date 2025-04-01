@@ -17,6 +17,7 @@ export {
 } from './reducers/uiReducer';
 
 export {
+  // Basic stats
   selectPlayerHealth,
   selectPlayerMaxHealth,
   selectPlayerMana,
@@ -27,7 +28,39 @@ export {
   selectPlayerHealthPercentage,
   selectPlayerManaPercentage,
   selectPlayerHandSize,
-  selectPlayerDeckSize
+  selectPlayerDeckSize,
+  
+  // Spirit Strain
+  selectSpiritStrain,
+  selectMaxSpiritStrain,
+  
+  // Card Management
+  selectCardCollection,
+  
+  // Resources
+  selectResources,
+  selectResource,
+  
+  // Progression
+  selectLevel,
+  selectExperience,
+  selectExperienceToNext,
+  
+  // Reputation
+  selectReputation,
+  selectFactionReputation,
+  
+  // Statistics
+  selectStatistics,
+  selectStat,
+  
+  // Achievements
+  selectAchievements,
+  selectAchievementProgress,
+  
+  // Preferences
+  selectPreferences,
+  selectPreference
 } from './reducers/playerReducer';
 
 export {
@@ -62,19 +95,28 @@ export {
   createTimingMiddleware
 } from './middleware/logger';
 
-// Import middleware creators explicitly
 import {
-  createHistoryMiddleware,
-  createPersistenceMiddleware
+  createHistoryMiddleware
 } from './middleware/history';
+
+import {
+  persistenceMiddleware,
+  loadPersistedState,
+  clearPersistedState
+} from './middleware/persistence';
 
 export {
   createHistoryMiddleware,
-  createPersistenceMiddleware,
   undo,
   redo,
   clearHistory
 } from './middleware/history';
+
+export {
+  persistenceMiddleware,
+  loadPersistedState,
+  clearPersistedState
+} from './middleware/persistence';
 
 // Utility functions
 export {
@@ -90,11 +132,61 @@ const defaultState = {
   ui: { 
     screen: 'title' 
   },
-  player: { 
-    health: 100, 
-    maxHealth: 100, 
-    mana: 100, 
-    maxMana: 100 
+  player: {
+    // Basic attributes
+    health: 100,
+    maxHealth: 100,
+    mana: 50,
+    maxMana: 50,
+    
+    // Card management
+    deck: [],
+    hand: [],
+    cardCollection: [],
+    
+    // Status
+    effects: [],
+    spiritStrain: 0,
+    maxSpiritStrain: 100,
+    
+    // Resources
+    resources: {
+      currency: 0,
+      materials: 0
+    },
+    
+    // Progression
+    level: 1,
+    experience: 0,
+    experienceToNext: 100,
+    
+    // Reputation
+    reputation: {
+      hospital: 0,
+      patients: 0,
+      community: 0
+    },
+    
+    // Statistics
+    statistics: {
+      patientsHealed: 0,
+      cardsPlayed: 0,
+      battlesWon: 0,
+      totalDamageDealt: 0,
+      totalHealingDone: 0
+    },
+    
+    // Achievements
+    achievements: [],
+    achievementProgress: {},
+    
+    // User preferences
+    preferences: {
+      soundVolume: 1,
+      musicVolume: 1,
+      uiScale: 1,
+      showTutorials: true
+    }
   },
   combat: { 
     active: false, 
@@ -137,11 +229,11 @@ export const createGameStore = ({
 
   // Add persistence middleware
   if (persistence) {
-    middleware.push(createPersistenceMiddleware({
-      key: 'gameState',
-      serialize: JSON.stringify,
-      deserialize: JSON.parse
-    }));
+    const savedState = loadPersistedState();
+    if (Object.keys(savedState).length > 0) {
+      defaultState.player = { ...defaultState.player, ...savedState };
+    }
+    middleware.push(persistenceMiddleware);
   }
 
   // Add history middleware

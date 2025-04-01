@@ -5,6 +5,18 @@ import {
   REMOVE_CARD_FROM_HAND,
   ADD_EFFECT_TO_PLAYER,
   REMOVE_EFFECT_FROM_PLAYER,
+  UPDATE_SPIRIT_STRAIN,
+  ADD_CARD_TO_COLLECTION,
+  REMOVE_CARD_FROM_COLLECTION,
+  SET_DECK,
+  UPDATE_RESOURCE,
+  GAIN_EXPERIENCE,
+  LEVEL_UP,
+  UPDATE_REPUTATION,
+  UPDATE_STATISTIC,
+  UNLOCK_ACHIEVEMENT,
+  UPDATE_ACHIEVEMENT_PROGRESS,
+  UPDATE_PREFERENCE,
   RESET_PLAYER
 } from './actionTypes';
 
@@ -68,9 +80,128 @@ export const removeEffectFromPlayer = (effectId) => ({
   payload: effectId
 });
 
+// Spirit Strain Management
 /**
- * Action creator for resetting player state to initial values
- * @returns {Object} Action object
+ * Update the player's spirit strain level
+ * @param {number} amount - Amount to change strain by (positive or negative)
+ */
+export const updateSpiritStrain = (amount) => ({
+  type: UPDATE_SPIRIT_STRAIN,
+  payload: amount
+});
+
+// Card Collection Management
+/**
+ * Add a card to the player's collection
+ * @param {Object} card - Card object to add
+ */
+export const addCardToCollection = (card) => ({
+  type: ADD_CARD_TO_COLLECTION,
+  payload: card
+});
+
+/**
+ * Remove a card from the player's collection
+ * @param {string} cardId - ID of card to remove
+ */
+export const removeCardFromCollection = (cardId) => ({
+  type: REMOVE_CARD_FROM_COLLECTION,
+  payload: cardId
+});
+
+/**
+ * Set the player's current deck
+ * @param {Array} cards - Array of card objects
+ */
+export const setDeck = (cards) => ({
+  type: SET_DECK,
+  payload: cards
+});
+
+// Resource Management
+/**
+ * Update a player resource
+ * @param {string} resource - Resource type to update
+ * @param {number} amount - Amount to change by
+ */
+export const updateResource = (resource, amount) => ({
+  type: UPDATE_RESOURCE,
+  payload: { resource, amount }
+});
+
+// Progression System
+/**
+ * Award experience points to the player
+ * @param {number} amount - Amount of experience to gain
+ */
+export const gainExperience = (amount) => ({
+  type: GAIN_EXPERIENCE,
+  payload: amount
+});
+
+/**
+ * Manually trigger a level up
+ */
+export const levelUp = () => ({
+  type: LEVEL_UP
+});
+
+// Reputation System
+/**
+ * Update reputation with a faction
+ * @param {string} faction - Faction name
+ * @param {number} amount - Amount to change by
+ */
+export const updateReputation = (faction, amount) => ({
+  type: UPDATE_REPUTATION,
+  payload: { faction, amount }
+});
+
+// Statistics System
+/**
+ * Update a player statistic
+ * @param {string} stat - Statistic to update
+ * @param {number} amount - Amount to change by
+ */
+export const updateStatistic = (stat, amount) => ({
+  type: UPDATE_STATISTIC,
+  payload: { stat, amount }
+});
+
+// Achievement System
+/**
+ * Unlock an achievement
+ * @param {Object} achievement - Achievement object
+ */
+export const unlockAchievement = (achievement) => ({
+  type: UNLOCK_ACHIEVEMENT,
+  payload: achievement
+});
+
+/**
+ * Update progress towards an achievement
+ * @param {string} id - Achievement ID
+ * @param {number} progress - Current progress value
+ */
+export const updateAchievementProgress = (id, progress) => ({
+  type: UPDATE_ACHIEVEMENT_PROGRESS,
+  payload: { id, progress }
+});
+
+// Preferences System
+/**
+ * Update a player preference setting
+ * @param {string} key - Preference key
+ * @param {*} value - New preference value
+ */
+export const updatePreference = (key, value) => ({
+  type: UPDATE_PREFERENCE,
+  payload: { key, value }
+});
+
+/**
+ * Reset player state to initial values
+ * Preserves preferences, card collection, achievements, and statistics
  */
 export const resetPlayer = () => ({
   type: RESET_PLAYER

@@ -100,15 +100,12 @@ describe('SceneManager', () => {
     });
 
     test('handles invalid scene names', async () => {
-      const consoleSpy = jest.spyOn(console, 'error');
-      try {
-        await sceneManager.switchToScene('nonexistent');
-        expect(false).toBe(true); // Should not reach here
-      } catch (error) {
-        expect(error.message).toBe('Scene nonexistent not found');
-        expect(consoleSpy).toHaveBeenCalledWith('Scene nonexistent not found');
-        expect(sceneManager.getActiveScene()).toBeNull();
-      }
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      await expect(sceneManager.switchToScene('nonexistent')).rejects
+        .toThrow('Scene nonexistent not found');
+      
+      expect(consoleSpy).toHaveBeenCalledWith('Scene nonexistent not found');
+      expect(sceneManager.getActiveScene()).toBeNull();
     });
 
     test('prevents concurrent transitions', async () => {
