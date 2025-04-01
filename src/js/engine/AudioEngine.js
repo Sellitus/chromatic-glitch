@@ -90,18 +90,16 @@ export class AudioEngine {
     async resume() {
         if (!this.audioContext) {
             console.warn("AudioEngine not initialized. Call init() first.");
-            return;
+            return Promise.resolve();
         }
 
-        if (this.audioContext.state === 'suspended') {
-            try {
-                await this.audioContext.resume();
-                this.isSuspended = false;
-                console.log("AudioContext resumed.");
-            } catch (e) {
-                console.error("Error resuming AudioContext:", e);
-                throw e; // Re-throw to allow error handling by caller
-            }
+        try {
+            await this.audioContext.resume();
+            this.isSuspended = false;
+            console.log("AudioContext resumed.");
+        } catch (e) {
+            console.error("Error resuming AudioContext:", e);
+            throw e; // Re-throw to allow error handling by caller
         }
     }
 
@@ -129,8 +127,7 @@ export class AudioEngine {
 
     // Effects Chain Routing
     connectNodes(nodes) {
-        if (!this.audioContext) return;
-        if (!Array.isArray(nodes) || nodes.length < 2) {
+        if (!this.audioContext || !Array.isArray(nodes) || nodes.length < 2) {
             console.warn("Invalid nodes array provided to connectNodes");
             return;
         }
@@ -149,7 +146,7 @@ export class AudioEngine {
                 nodes[i].connect(nodes[i + 1]);
             } catch (error) {
                 console.error(`Error connecting nodes at index ${i}:`, error);
-                break;
+                throw error; // Re-throw the error after logging
             }
         }
     }
@@ -294,7 +291,7 @@ export class AudioEngine {
 
     createReverb(duration = 2, decay = 0.5) {
         if (!this.audioContext) return null;
-        const length = this.audioContext.sampleRate * duration;
+        const length = Math.floor(duration * this.audioContext.sampleRate);
         const impulse = this.audioContext.createBuffer(2, length, this.audioContext.sampleRate);
         
         for (let channel = 0; channel < 2; channel++) {

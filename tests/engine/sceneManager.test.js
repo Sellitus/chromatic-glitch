@@ -101,21 +101,29 @@ describe('SceneManager', () => {
 
     test('handles invalid scene names', async () => {
       const consoleSpy = jest.spyOn(console, 'error');
-      await sceneManager.switchToScene('nonexistent');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Scene nonexistent not found')
-      );
-      expect(sceneManager.getActiveScene()).toBeNull();
+      try {
+        await sceneManager.switchToScene('nonexistent');
+        expect(false).toBe(true); // Should not reach here
+      } catch (error) {
+        expect(error.message).toBe('Scene nonexistent not found');
+        expect(consoleSpy).toHaveBeenCalledWith('Scene nonexistent not found');
+        expect(sceneManager.getActiveScene()).toBeNull();
+      }
     });
 
     test('prevents concurrent transitions', async () => {
       const consoleSpy = jest.spyOn(console, 'warn');
-      const firstSwitch = sceneManager.switchToScene('test');
-      sceneManager.switchToScene('another');
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Scene transition already in progress')
-      );
-      await firstSwitch;
+      
+      // Start first transition and store its promise
+      const firstTransition = sceneManager.switchToScene('test');
+      
+      // Attempt second transition while first is in progress
+      await expect(sceneManager.switchToScene('another'))
+        .rejects.toThrow('Scene transition already in progress');
+      expect(consoleSpy).toHaveBeenCalledWith('Scene transition already in progress');
+      
+      // Wait for first transition to complete
+      await firstTransition;
     });
 
     test('manages scene lifecycle correctly', async () => {
@@ -160,7 +168,7 @@ describe('SceneManager', () => {
       expect(testScene.lastEvent).toBe(event);
     });
 
-    test('skips updates during transition', async () => {
+    test('skips updates during transition', () => {
       sceneManager.transitioning = true;
       sceneManager.update(16.67);
       expect(testScene.updateCalled).toBe(false);
@@ -175,8 +183,6 @@ describe('SceneManager', () => {
 
   describe('Transitions', () => {
     test('implements fade transitions', async () => {
-      // Since fadeIn/fadeOut are currently using setTimeout,
-      // we can test that they take the expected duration
       jest.useFakeTimers();
       
       const transitionPromise = sceneManager.fadeIn();

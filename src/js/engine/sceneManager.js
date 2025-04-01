@@ -38,13 +38,13 @@ export default class SceneManager {
   async switchToScene(sceneName) {
     if (this.transitioning) {
       console.warn('Scene transition already in progress');
-      return;
+      return Promise.reject(new Error('Scene transition already in progress'));
     }
 
     const nextScene = this.scenes.get(sceneName);
     if (!nextScene) {
       console.error(`Scene ${sceneName} not found`);
-      return;
+      return Promise.reject(new Error(`Scene ${sceneName} not found`));
     }
 
     this.transitioning = true;

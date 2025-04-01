@@ -7,11 +7,11 @@ import { GameLoop } from './gameLoop';
 import { AssetManager } from './assetManager';
 import { InputHandler } from './inputHandler';
 import { DebugRenderer } from './debugRenderer';
-import { GameState } from './gameState';
+import { createGameStore } from '../state';
 
 export class GameInitializer {
   constructor() {
-    this.gameState = null;
+    this.store = null;
     this.sceneManager = null;
     this.audioEngine = null;
     this.audioManager = null;
@@ -25,7 +25,11 @@ export class GameInitializer {
       await this.audioEngine.init();
       
       this.audioManager = new AudioManager(this.audioEngine);
-      this.gameState = new GameState();
+      this.store = createGameStore({
+        debug: process.env.NODE_ENV === 'development',
+        persistence: true,
+        history: true
+      });
       this.assetManager = new AssetManager();
       this.inputHandler = new InputHandler();
       this.debugRenderer = new DebugRenderer();
@@ -33,7 +37,7 @@ export class GameInitializer {
       
       // Create scene manager after other systems
       this.sceneManager = new SceneManager(
-        this.gameState,
+        this.store,
         this.audioManager,
         this.inputHandler,
         this.eventSystem
@@ -69,7 +73,7 @@ export class GameInitializer {
 
   render() {
     this.sceneManager.render();
-    if (this.gameState.debug) {
+    if (process.env.NODE_ENV === 'development') {
       this.debugRenderer.render();
     }
   }

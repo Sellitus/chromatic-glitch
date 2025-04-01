@@ -161,7 +161,38 @@ class MockAudioContext {
     return Promise.resolve(mockBuffer);
   });
 
-  // Add other methods as needed (createAnalyser, etc.)
+  createBufferSource = jest.fn().mockImplementation(() => {
+     const node = {
+       ...createMockAudioNode(this),
+       buffer: null,
+       loop: false,
+       loopStart: 0,
+       loopEnd: 0,
+       playbackRate: createMockAudioParam(1),
+       onended: null,
+       start: jest.fn(),
+       stop: jest.fn(),
+     };
+     this._mockNodes.push(node);
+     return node;
+   });
+
+   createAnalyser = jest.fn().mockImplementation(() => {
+     const node = {
+       ...createMockAudioNode(this),
+       fftSize: 2048, // Default fftSize
+       frequencyBinCount: 1024, // Default frequencyBinCount (fftSize / 2)
+       minDecibels: -100,
+       maxDecibels: -30,
+       smoothingTimeConstant: 0.8,
+       getFloatFrequencyData: jest.fn(array => array.fill(-Infinity)), // Mock implementation
+       getByteFrequencyData: jest.fn(array => array.fill(0)), // Mock implementation
+       getFloatTimeDomainData: jest.fn(array => array.fill(0)), // Mock implementation
+       getByteTimeDomainData: jest.fn(array => array.fill(128)), // Mock implementation (center value)
+     };
+     this._mockNodes.push(node);
+     return node;
+   });
 }
 
 // Assign the mock to window.AudioContext and window.webkitAudioContext
@@ -202,4 +233,9 @@ expect.extend({
       pass,
     };
   },
+});
+
+// Global cleanup to clear mocks before each test
+beforeEach(() => {
+  jest.clearAllMocks();
 });

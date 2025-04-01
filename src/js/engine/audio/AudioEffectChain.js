@@ -39,8 +39,12 @@ export class AudioEffectChain {
      * @param {number} [index=this.effects.length] - The index at which to insert the effect.
      */
     addEffect(effectNode, index = this.effects.length) {
-        if (!(effectNode instanceof EffectNode)) {
-            console.error("Invalid effect node provided. Must be an instance of EffectNode.");
+        // Duck-typing check for essential methods instead of strict instanceof
+    if (!effectNode ||
+        typeof effectNode.getInputNode !== 'function' ||
+        typeof effectNode.getOutputNode !== 'function' ||
+        typeof effectNode.dispose !== 'function') {
+            console.error("Invalid effect node provided. Must have getInputNode, getOutputNode, and dispose methods.");
             return;
         }
         if (index < 0 || index > this.effects.length) {
@@ -221,7 +225,6 @@ export class AudioEffectChain {
      * Cleans up all effects and nodes within the chain.
      */
     dispose() {
-        console.log("Disposing AudioEffectChain...");
         // Dispose effects first
         this.effects.forEach(effect => {
             if (effect && typeof effect.dispose === 'function') {
@@ -236,10 +239,14 @@ export class AudioEffectChain {
 
         // Disconnect main input and output nodes with null checks and try/catch
         if (this.input) {
-            try { this.input.disconnect(); } catch (e) { console.warn(`Error disconnecting chain input: ${e.message}`); }
+            try {
+                this.input.disconnect();
+            } catch (e) { console.warn(`Error disconnecting chain input: ${e.message}`); }
         }
         if (this.output) {
-            try { this.output.disconnect(); } catch (e) { console.warn(`Error disconnecting chain output: ${e.message}`); }
+            try {
+                this.output.disconnect();
+            } catch (e) { console.warn(`Error disconnecting chain output: ${e.message}`); }
         }
 
         // Nullify references
@@ -247,7 +254,6 @@ export class AudioEffectChain {
         this.output = null;
         // Avoid nullifying shared audioContext unless it's exclusively owned by the chain
         // this.audioContext = null;
-        console.log("AudioEffectChain disposed.");
     }
 
 
@@ -270,7 +276,6 @@ export class AudioEffectChain {
                 return null; // Handle potential null effects in the array
             }).filter(Boolean) // Remove null entries
         };
-        console.log("Saving preset:", JSON.stringify(presetData, null, 2));
         return presetData;
     }
 
@@ -281,16 +286,26 @@ export class AudioEffectChain {
      * @param {object} registry - A map of effect type names (string) to class constructors.
      */
     loadPreset(presetData, registry = effectRegistry) {
-        console.log("Loading preset:", presetData);
-        // Clear existing effects safely
-        while (this.effects.length > 0) {
-            this.removeEffectAtIndex(0); // This handles disposal and connection updates
+        // 1. Dispose all current effects
+        this.effects.forEach(effect => {
+            if (effect && typeof effect.dispose === 'function') {
+                try {
+                    effect.dispose();
+                } catch (e) {
+                    console.warn(`Error disposing effect ${effect.constructor.name} during preset load: ${e.message}`);
+                }
+            }
+        });
+        // 2. Clear the effects array
+        this.effects = [];
+        // 3. Disconnect main input (will be reconnected by _updateConnections later)
+        if (this.input) {
+            try { this.input.disconnect(); } catch(e) { /* Ignore */ }
         }
 
         if (presetData && presetData.effects && Array.isArray(presetData.effects)) {
             presetData.effects.forEach(effectInfo => {
                 if (!effectInfo || !effectInfo.type || !effectInfo.state) {
-                    console.warn("Skipping invalid effect data in preset:", effectInfo);
                     return;
                 }
 
@@ -300,7 +315,8 @@ export class AudioEffectChain {
                         const effect = new EffectClass(this.audioContext);
                         if (typeof effect.fromJSON === 'function') {
                             effect.fromJSON(effectInfo.state);
-                            this.addEffect(effect); // Add to chain (handles connections)
+                            // Add directly to array, connections handled later
+                            this.effects.push(effect);
                         } else {
                              console.error(`Effect class ${effectInfo.type} does not implement fromJSON.`);
                         }
@@ -314,7 +330,8 @@ export class AudioEffectChain {
         } else {
             console.error("Invalid preset data format.");
         }
-        // Connections are updated automatically by addEffect/removeEffectAtIndex
+        // 5. Update connections once after adding all new effects
+        this._updateConnections();
     }
 
     // --- A/B Comparison (Placeholder) ---

@@ -9,6 +9,7 @@ module.exports = {
   transform: {
     '^.+\\.js$': 'babel-jest',
   },
+  // resetMocks: true, // Reverted - caused issues with mock implementations
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],

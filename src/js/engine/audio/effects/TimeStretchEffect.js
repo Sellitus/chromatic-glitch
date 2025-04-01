@@ -142,8 +142,8 @@ export class TimeStretchEffect extends EffectNode {
         const targetTime = now + rampTime;
 
         if (params.tempo !== undefined) {
-            // Clamp tempo to a reasonable range, e.g., 0.25x to 4x
-            this._currentTempo = Math.max(0.25, Math.min(params.tempo, 4.0));
+            // Clamp tempo to a reasonable range, e.g., 0.5x to 3x
+            this._currentTempo = Math.max(0.5, Math.min(params.tempo, 3.0));
             this.soundTouch.tempo = this._currentTempo;
         }
 

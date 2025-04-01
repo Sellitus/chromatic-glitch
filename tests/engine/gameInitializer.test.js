@@ -16,6 +16,15 @@ import { mockEventSystem } from './eventSystem.test.mock';
 import { mockSceneManager } from './sceneManager.test.mock';
 import { mockGameLoop } from './gameLoop.test.mock';
 
+// Mock createGameStore
+jest.mock('../../src/js/state', () => ({
+  createGameStore: jest.fn(() => ({
+    dispatch: jest.fn(),
+    getState: jest.fn(),
+    subscribe: jest.fn()
+  }))
+}));
+
 // Mock all dependencies
 jest.mock('../../src/js/engine/AudioEngine');
 jest.mock('../../src/js/engine/audioManager');
@@ -43,10 +52,14 @@ describe('GameInitializer', () => {
   let mockAudioEngine;
   let mockGameState;
   let mockAssetManager;
+  let addEventListenerSpy;
 
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
+
+    // Mock document.addEventListener
+    addEventListenerSpy = jest.spyOn(document, 'addEventListener');
 
     // Setup mock instances
     mockAudioEngine = {
@@ -64,7 +77,9 @@ describe('GameInitializer', () => {
     };
 
     mockGameState = { debug: false };
-    mockAssetManager = {};
+    mockAssetManager = {
+      loadAudio: jest.fn()
+    };
 
     // Setup mock implementations
     AudioEngine.mockImplementation(() => mockAudioEngine);
@@ -94,10 +109,19 @@ describe('GameInitializer', () => {
     });
 
     it('should register visibility change handler', async () => {
-      const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
       await gameInitializer.initialize();
       
       expect(addEventListenerSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+
+      // Test the handler
+      const handler = addEventListenerSpy.mock.calls[0][1];
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+      handler();
+      expect(mockAudioEngine.suspend).toHaveBeenCalled();
+
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+      handler();
+      expect(mockAudioEngine.resume).toHaveBeenCalled();
     });
   });
 

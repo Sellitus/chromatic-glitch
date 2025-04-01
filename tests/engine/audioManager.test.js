@@ -12,41 +12,41 @@ describe('AudioManager', () => {
   let mockBufferSource;
 
   beforeEach(() => {
-    // Mock AudioEngine
-    mockBufferSource = {
-      buffer: null,
-      connect: jest.fn(),
-      start: jest.fn(),
-      stop: jest.fn(),
-      loop: false
-    };
+    // Clear the mock state before each test
+    AudioEngine.mockClear();
 
-    mockAudioEngine = {
-      audioContext: {
-        currentTime: 0,
-        state: 'running'
-      },
-      masterGain: {
-        connect: jest.fn(),
-        gain: { value: 1 }
-      },
-      loadAudioBuffer: jest.fn().mockImplementation(async (url) => {
-        return { duration: 2.5 }; // Mock audio buffer
-      }),
-      playSound: jest.fn(),
-      createBufferSource: jest.fn(() => mockBufferSource),
-      suspend: jest.fn(),
-      resume: jest.fn()
-    };
+    // Create a fresh mock instance using the mocked constructor
+    // AudioEngine is globally mocked by jest.mock at the top
+    mockAudioEngine = new AudioEngine();
 
-    AudioEngine.mockImplementation(() => mockAudioEngine);
+    // Configure the mock instance's methods and properties for this suite
+    // Use the global MockAudioContext from jest.setup.js for consistency
+    const mockCtx = new window.AudioContext();
+    mockAudioEngine.audioContext = mockCtx;
+    mockAudioEngine.masterGain = mockCtx.createGain(); // Use the mock context's createGain
+
+    mockAudioEngine.loadAudioBuffer.mockImplementation(async (url) => {
+      if (url.includes('fail')) {
+        throw new Error('Failed to load audio');
+      }
+      // Return a buffer created by the mock context
+      return mockCtx.createBuffer(2, 44100, 44100);
+    });
+
+    mockAudioEngine.playSound.mockImplementation((buffer, options) => {
+      // Return a structure consistent with AudioEngine.playSound
+      return {
+        source: mockCtx.createBufferSource(),
+        gainNode: mockCtx.createGain()
+      };
+    });
 
     // Create AudioManager instance with mocked AudioEngine
     audioManager = new AudioManager(mockAudioEngine);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    // mockClear in beforeEach should suffice
   });
 
   describe('Initialization', () => {
@@ -69,7 +69,7 @@ describe('AudioManager', () => {
 
     test('handles loading errors', async () => {
       const error = new Error('Failed to load audio');
-      mockAudioEngine.loadAudioBuffer.mockRejectedValue(error);
+      mockAudioEngine.loadAudioBuffer.mockRejectedValueOnce(error); // Use Once for specific test
       await expect(audioManager.loadSound('test-sound', 'audio/test.mp3'))
         .rejects.toThrow('Failed to load audio');
     });
@@ -109,12 +109,17 @@ describe('AudioManager', () => {
     });
 
     test('handles stopping sounds', () => {
-      const soundInfo = {
-        source: mockBufferSource
-      };
-      audioManager.currentSound = soundInfo;
-      audioManager.stopSound(soundInfo);
-      expect(mockBufferSource.stop).toHaveBeenCalled();
+      // Get the object returned by the mocked playSound
+      const playedSoundInfo = audioManager.playSound('test-sound');
+      expect(playedSoundInfo).toBeDefined();
+      expect(playedSoundInfo.source).toBeDefined();
+      expect(playedSoundInfo.gainNode).toBeDefined();
+
+      // Pass the actual returned object to stopSound
+      // The source inside is a mock from the global setup via playSound mock
+      audioManager.stopSound(playedSoundInfo); // Use the correct variable
+      expect(playedSoundInfo.source.stop).toHaveBeenCalled(); // Check stop on the returned source
+      expect(playedSoundInfo.source.disconnect).toHaveBeenCalled(); // Check disconnect on the returned source
     });
 
     test('handles stopping null/undefined sound gracefully', () => {
