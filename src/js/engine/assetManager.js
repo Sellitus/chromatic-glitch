@@ -1,8 +1,12 @@
-import { AudioManager } from './audioManager.js';
+// AudioManager is now passed in
+// import { AudioManager } from './audioManager.js'; 
 
 export class AssetManager {
-    constructor() {
-        this.audioManager = new AudioManager();
+    constructor(audioManager) { // Accept audioManager as argument
+        if (!audioManager) {
+            throw new Error("AssetManager requires an AudioManager instance.");
+        }
+        this.audioManager = audioManager; // Use the passed instance
         this.images = new Map();
         this.json = new Map();
         this.manifest = null;
@@ -21,12 +25,8 @@ export class AssetManager {
         this.progressText = document.querySelector('.progress-text');
     }
 
-    init() {
-        this.audioManager.init();
-        if (!this.loadingScreen) {
-            this.initializeLoadingElements();
-        }
-    }
+    // init() method is removed as it's no longer needed here.
+    // AudioEngine initialization is handled in index.js
 
     updateProgress() {
         const progress = (this.loadedAssets / this.totalAssets) * 100;

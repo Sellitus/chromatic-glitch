@@ -1,75 +1,66 @@
+/**
+ * AudioManager - High-level audio management system.
+ * Handles sound effects and provides an interface for music playback.
+ * Delegates low-level audio operations to AudioEngine.
+ */
 export class AudioManager {
-  constructor() {
-    this.sounds = new Map();
-    this.music = new Map();
-    this.currentMusic = null;
-  }
-
-  init() {
-    // Initialize audio context when needed (on user interaction)
-    window.addEventListener('click', () => {
-      if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-    }, { once: true });
+  constructor(audioEngine) {
+    if (!audioEngine) {
+      throw new Error('AudioEngine instance is required');
+    }
+    this.audioEngine = audioEngine;
+    this.sounds = new Map(); // Map<name, AudioBuffer>
+    this.activeMusic = null; // Reference to current MusicTrack
   }
 
   async loadSound(name, url) {
     try {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-      this.sounds.set(name, audioBuffer);
+      const buffer = await this.audioEngine.loadAudioBuffer(url);
+      this.sounds.set(name, buffer);
+      return buffer;
     } catch (error) {
       console.error(`Error loading sound ${name}:`, error);
+      throw error;
     }
   }
 
-  async loadMusic(name, url) {
-    try {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-      this.music.set(name, audioBuffer);
-    } catch (error) {
-      console.error(`Error loading music ${name}:`, error);
+  playSound(name, { volume = 1, loop = false } = {}) {
+    const buffer = this.sounds.get(name);
+    if (!buffer) {
+      console.warn(`Sound not found: ${name}`);
+      return null;
+    }
+
+    return this.audioEngine.playSound(buffer, {
+      volume,
+      loop,
+      onEnded: (event) => {
+        // Clean up any references if needed
+      }
+    });
+  }
+
+  stopSound(soundInfo) {
+    if (soundInfo?.source) {
+      try {
+        soundInfo.source.stop();
+      } catch (e) {
+        if (e.name !== 'InvalidStateError') {
+          console.error('Error stopping sound:', e);
+        }
+      }
     }
   }
 
-  playSound(name) {
-    if (!this.audioContext) return;
-    
-    const sound = this.sounds.get(name);
-    if (sound) {
-      const source = this.audioContext.createBufferSource();
-      source.buffer = sound;
-      source.connect(this.audioContext.destination);
-      source.start();
-    }
+  /**
+   * Sets the master volume level
+   * @param {number} level Volume level (0.0 to 1.0)
+   */
+  setMasterVolume(level) {
+    this.audioEngine.setMasterVolume(level);
   }
 
-  playMusic(name, loop = true) {
-    if (!this.audioContext) return;
-    
-    if (this.currentMusic) {
-      this.stopMusic();
-    }
-
-    const music = this.music.get(name);
-    if (music) {
-      const source = this.audioContext.createBufferSource();
-      source.buffer = music;
-      source.loop = loop;
-      source.connect(this.audioContext.destination);
-      source.start();
-      this.currentMusic = source;
-    }
-  }
-
-  stopMusic() {
-    if (this.currentMusic) {
-      this.currentMusic.stop();
-      this.currentMusic = null;
-    }
+  getMasterVolume() {
+    return this.audioEngine.getMasterVolume();
   }
 }

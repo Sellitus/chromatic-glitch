@@ -96,8 +96,11 @@ describe('AssetManager', () => {
     });
     global.fetch = mockFetch;
 
-    // Create AssetManager instance
-    assetManager = new AssetManager();
+    // Create mock AudioManager instance using the mocked constructor
+    const mockAudioManagerInstance = new AudioManager();
+
+    // Create AssetManager instance, passing the mock AudioManager
+    assetManager = new AssetManager(mockAudioManagerInstance);
   });
 
   afterEach(() => {

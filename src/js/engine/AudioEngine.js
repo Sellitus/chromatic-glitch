@@ -11,32 +11,59 @@ export class AudioEngine {
         this.sources = new Map();
     }
 
-    // Initialize AudioContext on user interaction
+    // Initialize AudioContext, setting up listeners for interaction if needed
     async init() {
         return new Promise((resolve, reject) => {
-            const initContext = () => {
-                try {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    this.masterGain = this.audioContext.createGain();
-                    this.masterGain.connect(this.audioContext.destination);
-                    this.isSuspended = this.audioContext.state !== 'running';
-                    console.log(`AudioContext state: ${this.audioContext.state}`);
-                    if (!this.isSuspended) {
-                        resolve();
+            try {
+                // Attempt to create the context immediately
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.connect(this.audioContext.destination);
+                this.isSuspended = this.audioContext.state !== 'running';
+                console.log(`AudioContext initial state: ${this.audioContext.state}`);
+
+                // Function to resume context on interaction
+                const resumeContextOnInteraction = async () => {
+                    // Check if context exists and is suspended before resuming
+                    if (this.audioContext && this.audioContext.state === 'suspended') {
+                        try {
+                            await this.audioContext.resume();
+                            this.isSuspended = false; // Update state
+                            console.log("AudioContext resumed via interaction.");
+                            // Clean up listeners after successful resume
+                            window.removeEventListener('click', resumeContextOnInteraction);
+                            window.removeEventListener('keydown', resumeContextOnInteraction);
+                        } catch (e) {
+                            console.error("Error resuming AudioContext on interaction:", e);
+                            // Decide if this should reject the init promise or just log
+                        }
                     } else {
-                        resolve(); // Resolve even if suspended, resume() handles activation
+                         // Context might already be running or interaction happened before needed
+                         // Still remove listeners if they were added
+                         window.removeEventListener('click', resumeContextOnInteraction);
+                         window.removeEventListener('keydown', resumeContextOnInteraction);
                     }
-                    window.removeEventListener('click', initContext);
-                    window.removeEventListener('keydown', initContext);
-                } catch (e) {
-                    console.error("Web Audio API is not supported in this browser", e);
-                    reject(e);
+                };
+
+                // If context starts suspended, add interaction listeners
+                if (this.isSuspended) {
+                    console.log("AudioContext is suspended. Adding interaction listeners to resume.");
+                    // Use { once: true } so they automatically detach after firing
+                    window.addEventListener('click', resumeContextOnInteraction, { once: true });
+                    window.addEventListener('keydown', resumeContextOnInteraction, { once: true });
                 }
-            };
-            window.addEventListener('click', initContext, { once: true });
-            window.addEventListener('keydown', initContext, { once: true });
+
+                // Resolve the init promise immediately, allowing game load to continue
+                resolve();
+
+            } catch (e) {
+                // Catch errors during initial AudioContext creation
+                console.error("Web Audio API is not supported or context creation failed", e);
+                reject(e); // Reject the promise if context cannot be created
+            }
         });
     }
+
 
     // Master Volume Control with smooth transitions
     setMasterVolume(level) {

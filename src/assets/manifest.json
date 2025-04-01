@@ -5,12 +5,6 @@
             "id": "testData",
             "type": "json",
             "src": "assets/json/test-data.json"
-        },
-        {
-            "id": "dummyAudio",
-            "type": "audio",
-            "src": "assets/audio/placeholder.mp3",
-            "optional": true
         }
     ]
 }
