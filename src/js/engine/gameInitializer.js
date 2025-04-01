@@ -1,4 +1,4 @@
-import { AudioManager } from './audioManager';
+import { AudioEngine } from './AudioEngine';
 import { EventSystem } from './eventSystem';
 import { GameState } from './gameState';
 import { CardSystem } from '../systems/cardSystem';
@@ -12,7 +12,7 @@ export class GameInitializer {
     this.ctx = ctx;
     
     // Initialize core systems
-    this.audioManager = new AudioManager();
+    this.audioEngine = new AudioEngine();
     this.eventSystem = new EventSystem();
     this.gameState = new GameState();
     
@@ -23,9 +23,9 @@ export class GameInitializer {
     this.patientSystem = new PatientSystem(this.eventSystem);
   }
 
-  start() {
+  async start() {
     // Initialize game systems
-    this.audioManager.init();
+    await this.audioEngine.init();
     this.eventSystem.init();
     this.gameState.init();
     
