@@ -28,7 +28,16 @@ export default class UIComponent {
   createElement() {
     this.element = document.createElement('div');
     this.element.id = this.id;
-    this.element.classList.add('ui-component', this.className);
+    // Add base class first
+    this.element.classList.add('ui-component');
+    // Add any additional classes provided in options, splitting by space
+    if (this.className) {
+        this.className.split(' ').forEach(cls => {
+            if (cls) { // Avoid adding empty strings if there are multiple spaces
+                this.element.classList.add(cls);
+            }
+        });
+    }
     this.applyAccessibility();
   }
 
