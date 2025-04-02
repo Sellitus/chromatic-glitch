@@ -8,6 +8,8 @@ import { AssetManager } from './assetManager';
 import { InputHandler } from './inputHandler';
 import { DebugRenderer } from './debugRenderer';
 import { createGameStore } from '../state';
+import { PixiAppManager } from './pixiApp';
+import { CardGameScene } from '../scenes/CardGameScene';
 
 export class GameInitializer {
   constructor() {
@@ -16,6 +18,7 @@ export class GameInitializer {
     this.audioEngine = null;
     this.audioManager = null;
     this.currentMusic = null;
+    this.pixiApp = null;
   }
 
   async initialize() {
@@ -23,7 +26,11 @@ export class GameInitializer {
       // Initialize core systems
       this.audioEngine = new AudioEngine();
       await this.audioEngine.init();
-      
+
+      // Initialize PixiJS application
+      this.pixiApp = new PixiAppManager();
+      this.pixiApp.initialize(document.getElementById('game-container'));
+
       this.audioManager = new AudioManager(this.audioEngine);
       this.store = createGameStore({
         debug: process.env.NODE_ENV === 'development',
@@ -34,7 +41,7 @@ export class GameInitializer {
       this.inputHandler = new InputHandler();
       this.debugRenderer = new DebugRenderer();
       this.eventSystem = new EventSystem();
-      
+
       // Create scene manager after other systems
       this.sceneManager = new SceneManager(
         this.store,
@@ -42,6 +49,10 @@ export class GameInitializer {
         this.inputHandler,
         this.eventSystem
       );
+
+      // Create and register game scenes
+      const cardGameScene = new CardGameScene(this.pixiApp);
+      this.sceneManager.addScene(cardGameScene);
 
       // Start game loop
       this.gameLoop = new GameLoop({
@@ -88,14 +99,14 @@ export class GameInitializer {
   async createMusicTrack({ name, stems }) {
     try {
       const track = new MusicTrack(this.audioEngine);
-      
+
       // Load all stems
       const loadPromises = Object.entries(stems).map(
         ([stemName, url]) => track.addStem(stemName, url)
       );
-      
+
       await Promise.all(loadPromises);
-      
+
       return track;
     } catch (error) {
       console.error(`Failed to create music track ${name}:`, error);
@@ -120,7 +131,7 @@ export class GameInitializer {
           setTimeout(resolve, fadeOutDuration * 1000);
         });
       });
-      
+
       await Promise.all(fadePromises);
       this.currentMusic.stop();
     }
@@ -143,10 +154,52 @@ export class GameInitializer {
           setTimeout(resolve, fadeOutDuration * 1000);
         });
       });
-      
+
       await Promise.all(fadePromises);
       this.currentMusic.stop();
       this.currentMusic = null;
     }
+  }
+
+  /**
+   * Start the card game scene
+   * @param {Object} options Options for initializing the card game
+   * @param {number} [options.initialCards=5] Number of cards to deal initially
+   */
+  async startCardGame(options = {}) {
+    await this.sceneManager.switchToScene('cardGame');
+    const scene = this.sceneManager.getActiveScene();
+    if (scene instanceof CardGameScene) {
+      await scene.dealCards(options.initialCards || 5);
+    }
+  }
+
+  /**
+   * Clean up and destroy game resources
+   */
+  destroy() {
+    // Stop any playing music
+    this.stopMusic(0);
+
+    // Cleanup audio system
+    if (this.audioEngine) {
+      this.audioEngine.destroy();
+    }
+
+    // Cleanup PixiJS
+    if (this.pixiApp) {
+      this.pixiApp.destroy();
+    }
+
+    // Remove event listeners
+    document.removeEventListener('visibilitychange', this.audioEngine.suspend);
+
+    // Clear references
+    this.store = null;
+    this.sceneManager = null;
+    this.audioEngine = null;
+    this.audioManager = null;
+    this.currentMusic = null;
+    this.pixiApp = null;
   }
 }

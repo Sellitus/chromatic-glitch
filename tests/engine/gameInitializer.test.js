@@ -10,6 +10,8 @@ import { EventSystem } from '../../src/js/engine/eventSystem';
 import { SceneManager } from '../../src/js/engine/sceneManager';
 import { GameLoop } from '../../src/js/engine/gameLoop';
 
+import { PixiAppManager } from '../../src/js/engine/pixiApp'; // Import to mock
+import { CardGameScene } from '../../src/js/scenes/CardGameScene'; // Import to mock
 import { mockInputHandler } from './inputHandler.test.mock';
 import { mockDebugRenderer } from './debugRenderer.test.mock';
 import { mockEventSystem } from './eventSystem.test.mock';
@@ -47,16 +49,26 @@ jest.mock('../../src/js/engine/gameLoop', () => ({
   GameLoop: jest.fn(() => mockGameLoop)
 }));
 
+// Mock CardGameScene
+jest.mock('../../src/js/scenes/CardGameScene');
+
+// Mock PixiAppManager
+jest.mock('../../src/js/engine/pixiApp');
+
 describe('GameInitializer', () => {
   let gameInitializer;
   let mockAudioEngine;
   let mockGameState;
   let mockAssetManager;
   let addEventListenerSpy;
+  let mockPixiAppInstance; // Renamed from mockPixiAppManager for clarity
 
   beforeEach(() => {
     // Reset mocks
     jest.clearAllMocks();
+
+    // Create the container element needed by PixiAppManager
+    document.body.innerHTML = '<div id="game-container"></div>';
 
     // Mock document.addEventListener
     addEventListenerSpy = jest.spyOn(document, 'addEventListener');
@@ -81,36 +93,48 @@ describe('GameInitializer', () => {
       loadAudio: jest.fn()
     };
 
+    // Mock PixiAppManager instance and methods
+    mockPixiAppInstance = {
+      initialize: jest.fn(),
+      getApp: jest.fn(() => ({ stage: { on: jest.fn(), off: jest.fn() } })) // Mock nested properties needed
+    };
+
     // Setup mock implementations
     AudioEngine.mockImplementation(() => mockAudioEngine);
     AudioManager.mockImplementation(() => ({ init: jest.fn() }));
     GameState.mockImplementation(() => mockGameState);
     AssetManager.mockImplementation(() => mockAssetManager);
+    PixiAppManager.mockImplementation(() => mockPixiAppInstance); // Use the instance mock
 
     gameInitializer = new GameInitializer();
+
+ // Mock the scene instance that would be created
+ CardGameScene.mockImplementation(() => ({ name: 'cardGame' }));
   });
 
   describe('initialization', () => {
     it('should initialize all systems successfully', async () => {
       const success = await gameInitializer.initialize();
-      
+
       expect(success).toBe(true);
       expect(AudioEngine).toHaveBeenCalled();
       expect(mockAudioEngine.init).toHaveBeenCalled();
+      expect(PixiAppManager).toHaveBeenCalled(); // Check if constructor was called
+      expect(mockPixiAppInstance.initialize).toHaveBeenCalledWith(document.getElementById('game-container')); // Check if initialize was called
       expect(AudioManager).toHaveBeenCalledWith(mockAudioEngine);
       expect(GameLoop).toHaveBeenCalled();
     });
 
     it('should handle initialization failures', async () => {
       mockAudioEngine.init.mockRejectedValue(new Error('Init failed'));
-      
+
       const success = await gameInitializer.initialize();
       expect(success).toBe(false);
     });
 
     it('should register visibility change handler', async () => {
       await gameInitializer.initialize();
-      
+
       expect(addEventListenerSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
 
       // Test the handler
@@ -127,6 +151,7 @@ describe('GameInitializer', () => {
 
   describe('music track management', () => {
     beforeEach(async () => {
+      // Ensure initialization runs before music tests
       await gameInitializer.initialize();
     });
 

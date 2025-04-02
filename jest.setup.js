@@ -1,3 +1,16 @@
+// Polyfill for fetch API in Node.js environment
+const fetch = require('node-fetch');
+global.fetch = fetch;
+global.Request = fetch.Request;
+global.Response = fetch.Response;
+global.Headers = fetch.Headers;
+
+
+// Mock window properties for PixiJS/JSDOM compatibility
+Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 768 });
+Object.defineProperty(window, 'devicePixelRatio', { writable: true, configurable: true, value: 1 });
+
 // Mock Event constructor for testing audio context initialization
 global.Event = class {
   constructor(type) {
