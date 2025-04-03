@@ -7,9 +7,11 @@ global.Headers = fetch.Headers;
 
 
 // Mock window properties for PixiJS/JSDOM compatibility
-Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
-Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 768 });
-Object.defineProperty(window, 'devicePixelRatio', { writable: true, configurable: true, value: 1 });
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+  Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 768 });
+  Object.defineProperty(window, 'devicePixelRatio', { writable: true, configurable: true, value: 1 });
+}
 
 // Mock Event constructor for testing audio context initialization
 global.Event = class {
@@ -209,8 +211,10 @@ class MockAudioContext {
 }
 
 // Assign the mock to window.AudioContext and window.webkitAudioContext
-window.AudioContext = MockAudioContext;
-window.webkitAudioContext = MockAudioContext;
+if (typeof window !== 'undefined') {
+  window.AudioContext = MockAudioContext;
+  window.webkitAudioContext = MockAudioContext;
+}
 
 // Mock AudioBuffer if not available
 if (typeof AudioBuffer === 'undefined') {
@@ -236,19 +240,4 @@ if (typeof ArrayBuffer === 'undefined') {
   };
 }
 
-// Add Jest-specific matchers if needed
-expect.extend({
-  toBeAudioNode(received) {
-    const pass = received && typeof received.connect === 'function';
-    return {
-      message: () =>
-        `expected ${received} to be an AudioNode (have a connect method)`,
-      pass,
-    };
-  },
-});
-
-// Global cleanup to clear mocks before each test
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+// End of setup

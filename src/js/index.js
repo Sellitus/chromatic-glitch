@@ -1,195 +1,197 @@
-import GameLoop from './engine/gameLoop.js';
-import SceneManager from './engine/sceneManager.js';
-import InputHandler from './engine/inputHandler.js';
+import { PixiAppManager } from './engine/pixiApp.js';
 import PerformanceMonitor from './engine/performanceMonitor.js';
 import DebugRenderer from './engine/debugRenderer.js';
+import InputHandler from './engine/inputHandler.js';
+import GameLoop from './engine/gameLoop.js';
+import { AudioEngine } from './engine/AudioEngine.js';
+import { AudioManager } from './engine/audioManager.js';
 import { AssetManager } from './engine/assetManager.js';
-import { AudioEngine } from './engine/AudioEngine.js'; // Import AudioEngine
-import { AudioManager } from './engine/audioManager.js'; // Import AudioManager
-import TestScene from './scenes/testScene.js';
+import SceneManager from './engine/sceneManager.js';
+import { CardGameScene } from './scenes/CardGameScene.js'; // Import the scene
 
-class Game {
-  constructor() {
-    // Create canvas first, as DebugRenderer needs it
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = 800;
-    this.canvas.height = 600;
-    document.body.appendChild(this.canvas);
-
-    // Initialize basic components that don't depend on DOM elements being fully ready
-    // or other managers
-    this.performanceMonitor = new PerformanceMonitor();
-    // Initialize DebugRenderer *before* initializeDOMElements uses it
-    this.debugRenderer = new DebugRenderer(this.canvas, this.performanceMonitor);
-    this.inputHandler = new InputHandler();
-    this.gameLoop = new GameLoop();
-
-    // Initialize core engine components (input, loop callbacks, key listeners)
-    // This was previously named initializeDOMElements, renaming for clarity
-    this.initializeEngineCore();
-
-    // Initialize Audio System (will be async)
-    this.audioEngine = null;
-    this.audioManager = null;
-
-    // Asset Manager needs AudioManager, will be initialized after audio
-    this.assetManager = null;
-
-    // Scene Manager needs Asset Manager
-    this.sceneManager = null;
-
-    // Add properties for debug toggles
-    this.debugEnabled = true;
-    this.showPerformance = false; // Default to false
-    this.showColliders = false; // Default to false
-  }
-
-  // Renamed from initializeDOMElements
-  initializeEngineCore() {
-    // Canvas is already created and appended in constructor
-    // Enable debug rendering by default
-    this.debugRenderer.setEnabled(this.debugEnabled); // Use the property
-
-    // Initialize input handling
-    this.inputHandler.init(this.canvas);
-
-    // Set up game loop callbacks
-    this.gameLoop.setUpdateFunction(this.update.bind(this));
-    this.gameLoop.setRenderFunction(this.render.bind(this));
-
-    // Set up keyboard shortcuts for debug features
-    window.addEventListener('keydown', (event) => {
-      switch (event.code) {
-        case 'KeyD':
-          // Toggle debug rendering
-          this.debugRenderer.setEnabled(!this.debugEnabled);
-          break;
-        case 'KeyP':
-          // Toggle performance metrics
-          this.showPerformance = !this.showPerformance; // Toggle property
-          this.debugRenderer.showPerformanceMetrics(this.showPerformance); // Use property
-          break;
-        case 'KeyC':
-          // Toggle collider visualization
-          this.showColliders = !this.showColliders; // Toggle property
-          this.debugRenderer.showColliderBoxes(this.showColliders); // Use property
-          break;
-      }
-    });
-  }
-
-  /**
-   * Asynchronously initialize audio and the asset manager.
-   */
-  async initializeAudioAndAssetManager() {
-    // Initialize Audio Engine (requires user interaction)
-    this.audioEngine = new AudioEngine();
-    console.log('Initializing AudioEngine... Click or press a key if needed.');
-    await this.audioEngine.init(); // This now resolves immediately
-    // Attempt to resume, but don't await it here to avoid blocking loading.
-    // Interaction listeners in AudioEngine.init will handle resuming later if needed.
-    this.audioEngine.resume();
-
-    // Initialize Audio Manager with the engine
-    this.audioManager = new AudioManager(this.audioEngine);
-
-    // Initialize Asset Manager with the audio manager
-    this.assetManager = new AssetManager(this.audioManager);
-    // SceneManager and scenes will be initialized in start() after assets are loaded
-  }
-
-  /**
-   * Start the game
-   */
-  async start() {
-    // Add a log right at the beginning of start
-    console.log('Game start() method called.');
-    try {
-      // Initialize audio and asset manager (must happen before loading)
-      await this.initializeAudioAndAssetManager();
-      console.log('Audio and AssetManager initialized.');
-
-      // Load assets
-      console.log('Starting asset preload...');
-      const manifestPath = 'assets/manifest.json';
-      console.log('Loading manifest from:', manifestPath);
-      const loadResult = await this.assetManager.preloadAssets(manifestPath);
-      console.log('Asset preload finished. Success:', loadResult.success);
-      if (!loadResult.success) {
-         console.error('Asset loading failed:', this.assetManager.getLoadingStatus().errors);
-         // Optionally stop here if loading fails critically
-         // return;
-      }
-
-      // Initialize Scene Manager *after* AssetManager is ready
-      this.sceneManager = new SceneManager(this.assetManager);
-      console.log('SceneManager initialized.');
-
-      // Create and add scenes *after* SceneManager is ready
-      const testScene = new TestScene(this.canvas, this.assetManager);
-      this.sceneManager.addScene(testScene);
-      console.log('TestScene added.');
-
-      // Switch to the initial scene
-      await this.sceneManager.switchToScene('TestScene');
-      console.log('Switched to TestScene.');
-
-      // Start the game loop only after everything is set up
-      this.gameLoop.start();
-      console.log('Game loop started.');
-    } catch (error) {
-      console.error('Error during game start sequence:', error);
-    }
-  }
-
-  /**
-   * Update game logic
-   * @param {number} deltaTime - Time elapsed since last update
-   */
-  update(deltaTime) {
-    // Start performance monitoring for update
-    this.performanceMonitor.markUpdateStart();
-
-    // Update current scene (check if sceneManager is initialized)
-    if (this.sceneManager) {
-      this.sceneManager.update(deltaTime);
+/**
+ * Main game class that coordinates all systems
+ */
+export class Game {
+    constructor() {
+        this.pixiApp = null;
+        this.performanceMonitor = null;
+        this.debugRenderer = null;
+        this.inputHandler = null;
+        this.gameLoop = null;
+        this.audioEngine = null;
+        this.audioManager = null;
+        this.assetManager = null;
+        this.sceneManager = null;
     }
 
-    // End performance monitoring for update
-    this.performanceMonitor.markUpdateEnd();
-    this.performanceMonitor.updateMetrics();
-  }
+    /**
+     * Initialize and start the game
+     */
+    async start() {
+        this.log('Game start() method called.');
 
-  /**
-   * Render the game
-   * @param {number} interpolationFactor - Smoothing factor for rendering
-   */
-  render(interpolationFactor) {
-    // Start performance monitoring for render
-    this.performanceMonitor.markRenderStart();
-
-    // Render current scene (check if sceneManager is initialized)
-    if (this.sceneManager) {
-      this.sceneManager.render(interpolationFactor);
-    }
-
-    // Render debug information
-    const activeScene = this.sceneManager?.getActiveScene(); // Use optional chaining
-    if (activeScene) {
-      this.debugRenderer.render(activeScene.name, [
-        {
-          text: this.gameLoop.isActive() ? 'Running' : 'Paused',
+        try {
+            await this.initializeEngineCore();
+            await this.initializeGameSystems();
+            await this.startGameLoop();
+        } catch (error) {
+            this.error('Error during game start sequence:', error);
+            throw error;
         }
-      ]);
     }
 
-    // End performance monitoring for render
-    this.performanceMonitor.markRenderEnd();
-  }
+    /**
+     * Initialize core engine components
+     */
+    async initializeEngineCore() {
+        // Initialize audio first since it needs user interaction
+        this.log('Initializing AudioEngine... Click or press a key if needed.');
+        this.audioEngine = new AudioEngine();
+        await this.audioEngine.init();
+
+        // Initialize PIXI application
+        this.pixiApp = new PixiAppManager();
+        await this.pixiApp.init();
+        this.pixiApp.initialize(document.body);
+
+        // Initialize core components
+        this.performanceMonitor = new PerformanceMonitor();
+        this.debugRenderer = new DebugRenderer(this.pixiApp.getApp().canvas, this.performanceMonitor);
+        this.inputHandler = new InputHandler();
+        this.gameLoop = new GameLoop();
+
+        // Initialize managers in correct order with dependencies
+        this.audioManager = new AudioManager(this.audioEngine);
+        this.assetManager = new AssetManager(this.audioManager);
+        this.sceneManager = new SceneManager(this.assetManager); // Pass assetManager instead of pixiApp
+
+        window.__SCENE_MANAGER__ = this.sceneManager; // Expose for testing/debugging
+
+        this.log('Managers initialized.');
+    }
+
+    /**
+     * Initialize game-specific systems
+     */
+    async initializeGameSystems() {
+        // Preload assets
+        this.log('Starting asset preload...');
+        this.log('Loading manifest from: assets/manifest.json');
+        const result = await this.assetManager.preloadAssets('assets/manifest.json');
+        this.log('Asset preload finished. Success:', result.success);
+
+        // Check for any asset loading errors
+        const status = this.assetManager.getLoadingStatus();
+        if (status.errors.length > 0) {
+            this.error('Asset loading errors:', status.errors);
+            throw new Error('Failed to load required assets');
+        }
+
+        // Register and load the initial scene
+        const cardGameScene = new CardGameScene(this.pixiApp); // Pass pixiApp here
+        this.sceneManager.addScene(cardGameScene);
+        await this.sceneManager.switchToScene('cardGame'); // Use the correct scene name 'cardGame'
+    }
+
+    /**
+     * Start the game loop
+     */
+    async startGameLoop() {
+        // Initialize input handler with canvas
+        this.inputHandler.init(this.pixiApp.getApp().canvas);
+
+        // Start game loop
+        // Pass interpolationFactor to render
+        this.gameLoop.setUpdateFunction(deltaTime => this.update(deltaTime));
+        this.gameLoop.setRenderFunction(interpolationFactor => this.render(interpolationFactor));
+        // Start the loop
+        this.gameLoop.start();
+    }
+
+    /**
+     * Update game state
+     * @param {number} deltaTime Time since last update in milliseconds
+     */
+    update(deltaTime) {
+        this.performanceMonitor.markUpdateStart();
+        
+        // Input state is updated via event listeners, no explicit update call needed here.
+        // Update the active scene
+        this.sceneManager.update(deltaTime);
+
+        this.performanceMonitor.markUpdateEnd();
+    }
+
+    /**
+     * Render the game
+     */
+    render(interpolationFactor) {
+        this.performanceMonitor.markRenderStart();
+        
+        // Render the active scene
+        // PIXI.Application ticker handles rendering the stage automatically. No need to call sceneManager.render here.
+
+        // Render debug info on top
+        this.debugRenderer.render(this.sceneManager.getActiveScene()?.name || 'No Scene');
+        this.performanceMonitor.markRenderEnd();
+    }
+
+    /**
+     * Clean up and shut down the game
+     */
+    destroy() {
+        if (this.gameLoop) {
+            this.gameLoop.stop();
+            this.gameLoop.destroy();
+        }
+        if (this.inputHandler) {
+            this.inputHandler.destroy();
+        }
+        if (this.performanceMonitor) {
+            this.performanceMonitor.destroy();
+        }
+        if (this.debugRenderer) {
+            this.debugRenderer.destroy();
+        }
+        if (this.audioManager) {
+            this.audioManager.destroy();
+        }
+        if (this.audioEngine) {
+            this.audioEngine.destroy();
+        }
+        if (this.assetManager) {
+            this.assetManager.destroy();
+        }
+        if (this.sceneManager) {
+            this.sceneManager.destroy();
+        }
+        if (this.pixiApp) {
+            this.pixiApp.destroy();
+        }
+    }
+
+    /**
+     * Log a message to console
+     * @param  {...any} args Arguments to log
+     */
+    log(...args) {
+        console.log(...args);
+    }
+
+    /**
+     * Log an error to console
+     * @param  {...any} args Arguments to log
+     */
+    error(...args) {
+        console.error(...args);
+    }
 }
 
-// Start the game when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  const game = new Game();
-  game.start().catch(console.error);
+
+// Instantiate and start the game
+const game = new Game();
+game.start().catch(error => {
+    console.error("Failed to start the game:", error);
+    // Optionally display an error message to the user on the page
 });

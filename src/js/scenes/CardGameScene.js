@@ -1,7 +1,10 @@
 import { PixiScene } from '../engine/PixiScene';
 import { PixiHandDisplay } from '../ui/components/PixiHandDisplay';
+import { PixiDrawPileDisplay } from '../ui/components/PixiDrawPileDisplay';
+
 import { PixiCardPreview } from '../ui/components/PixiCardPreview';
-import { CardFactory } from '../cards/CardFactory';
+import { CardType } from '../cards/CardType.js'; // Import CardType
+import { Card } from '../cards/Card.js'; // Import Card class
 
 /**
  * Scene that handles card-based gameplay
@@ -14,9 +17,12 @@ export class CardGameScene extends PixiScene {
         this.handDisplay = null;
         this.cardPreview = null;
         
+        this.drawPileDisplay = null;
+
         // Game state
         this.playerHand = [];
-        this.cardFactory = new CardFactory();
+        this.drawPileSize = 30; // Initial number of cards in draw pile
+        // No need for CardFactory instance here for test data
     }
 
     /**
@@ -28,19 +34,31 @@ export class CardGameScene extends PixiScene {
         // Create hand display
         this.handDisplay = new PixiHandDisplay({
             width: this.pixiApp.getApp().screen.width,
-            height: 200
+            height: 220
         });
         this.handDisplay.position.set(
-            0,
-            this.pixiApp.getApp().screen.height - 220
+            this.pixiApp.getApp().screen.width / 2 - this.handDisplay.width / 2,
+            this.pixiApp.getApp().screen.height - 240
         );
-        this.getContainer('cards').addChild(this.handDisplay);
+        this.getContainer('ui').addChild(this.handDisplay);
 
         // Create card preview
         this.cardPreview = new PixiCardPreview({
             scale: 1.5
         });
         this.getContainer('preview').addChild(this.cardPreview);
+
+
+        // Create draw pile display
+        this.drawPileDisplay = new PixiDrawPileDisplay();
+        // Position it (e.g., top right corner - adjust as needed)
+        this.drawPileDisplay.position.set(
+            this.pixiApp.getApp().screen.width - 180, // Move left a bit to account for larger cards
+            50 // Example Y
+        );
+        // Set initial draw pile count
+        this.drawPileDisplay.updateCount(this.drawPileSize);
+        this.getContainer('ui').addChild(this.drawPileDisplay); // Assuming a 'ui' container exists
 
         // Setup preview interaction with hand
         this._setupPreviewInteraction();
@@ -50,6 +68,9 @@ export class CardGameScene extends PixiScene {
             width: this.pixiApp.getApp().screen.width,
             height: this.pixiApp.getApp().screen.height
         });
+
+        // Deal initial hand
+        this.dealCards(5);
     }
 
     /**
@@ -60,7 +81,18 @@ export class CardGameScene extends PixiScene {
     _handleResize({ width, height }) {
         if (this.handDisplay) {
             this.handDisplay.width = width;
-            this.handDisplay.position.set(0, height - 220);
+            this.handDisplay.position.set(
+                width / 2 - this.handDisplay.width / 2,
+                height - 240
+            );
+        }
+
+        if (this.drawPileDisplay) {
+            // Keep draw pile in top right corner
+            this.drawPileDisplay.position.set(
+                width - 180,
+                50
+            );
         }
     }
 
@@ -100,15 +132,23 @@ export class CardGameScene extends PixiScene {
      * @param {number} count Number of cards to deal
      */
     async dealCards(count) {
+        // Check if we have enough cards to deal
+        if (count > this.drawPileSize) {
+            count = this.drawPileSize;
+        }
+
         for (let i = 0; i < count; i++) {
             // Create a test card (replace with actual card creation logic)
-            const card = this.cardFactory.createCard({
-                name: `Test Card ${i + 1}`,
+            const cardDefinition = {
+                id: `test_${i + 1}`, // Add required ID
+                name: `Ability ${i + 1}`,
                 description: 'This is a test card with some effect description that might be long enough to wrap.',
                 cost: Math.floor(Math.random() * 3) + 1,
-                type: ['ATTACK', 'SKILL', 'POWER'][Math.floor(Math.random() * 3)],
-                rarity: ['COMMON', 'UNCOMMON', 'RARE'][Math.floor(Math.random() * 3)]
-            });
+                type: 'MELODY', // Use valid card type from enum
+                rarity: 'COMMON', // Start with common cards
+                effectKey: 'placeholderEffect' // Add required effectKey
+            };
+            const card = new Card(cardDefinition); // Instantiate Card directly
 
             // Add to hand with animation
             await this.handDisplay.addCard(card, true);
@@ -116,6 +156,10 @@ export class CardGameScene extends PixiScene {
 
             // Small delay between dealing cards
             await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Update draw pile size and display
+            this.drawPileSize--;
+            this.drawPileDisplay.updateCount(this.drawPileSize);
         }
     }
 
@@ -133,6 +177,10 @@ export class CardGameScene extends PixiScene {
         if (this.cardPreview) {
             this.cardPreview.update(deltaTime);
         }
+        if (this.drawPileDisplay) {
+            this.drawPileDisplay.update(deltaTime);
+        }
+
     }
 
     /**
@@ -147,6 +195,11 @@ export class CardGameScene extends PixiScene {
             this.cardPreview.destroy({ children: true });
             this.cardPreview = null;
         }
+        if (this.drawPileDisplay) {
+            this.drawPileDisplay.destroy({ children: true });
+            this.drawPileDisplay = null;
+        }
+
 
         super.destroy();
     }

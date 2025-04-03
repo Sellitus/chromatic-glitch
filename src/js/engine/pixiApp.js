@@ -1,18 +1,37 @@
-import { Application, Container, filters } from 'pixi.js';
+import { Application, Container, AlphaFilter } from 'pixi.js';
 
 /**
  * Manages the PixiJS application instance and core rendering setup
  */
 export class PixiAppManager {
     constructor(options = {}) {
-        // Create PixiJS application
-        this.app = new Application({
-            width: options.width || window.innerWidth,
-            height: options.height || window.innerHeight,
-            backgroundColor: options.backgroundColor || 0x1a1a1a,
+        this.options = options;
+        this.app = null;
+        this.layers = null;
+    }
+
+    async init() {
+        // Create a canvas element
+        const canvas = document.createElement('canvas');
+        
+        // Create PIXI application
+        const app = new Application();
+
+        // Initialize with options that work in both test and production environments
+        await app.init({
+            width: this.options.width || window.innerWidth,
+            height: this.options.height || window.innerHeight,
+            backgroundColor: this.options.backgroundColor || 0x1a1a1a,
             antialias: true,
-            resolution: window.devicePixelRatio || 1
+            resolution: window.devicePixelRatio || 1,
+            canvas: canvas,
+            forceCanvas: process.env.NODE_ENV === 'test', // Use canvas renderer in test environment
+            preferWebGL: process.env.NODE_ENV !== 'test'  // Prefer WebGL in production
         });
+        
+        this.app = app;
+
+        window.__PIXI_APP__ = this.app; // Expose for testing/debugging
 
         // Setup container hierarchy
         this.layers = {
@@ -34,7 +53,7 @@ export class PixiAppManager {
 
         // Setup filters for effects
         this.app.stage.filters = [
-            new filters.AlphaFilter()
+            new AlphaFilter()
         ];
     }
 
@@ -43,8 +62,11 @@ export class PixiAppManager {
      * @param {HTMLElement} container DOM element to attach the canvas to
      */
     initialize(container) {
+        if (!this.app) {
+            throw new Error('PixiAppManager must be initialized with init() before calling initialize()');
+        }
         // Add canvas to DOM
-        container.appendChild(this.app.view);
+        container.appendChild(this.app.canvas);
         
         // Initial resize
         this._handleResize();
@@ -65,7 +87,7 @@ export class PixiAppManager {
     /**
      * Add a display object to a specific layer
      * @param {PIXI.DisplayObject} object Object to add
-     * @param {string} layerName Target layer name - must be one of 'background', 'game', 'cards', 'ui', 'preview', 'effects'
+     * @param {string} layerName Target layer name
      */
     addToLayer(object, layerName) {
         const layer = this.layers[layerName];
@@ -139,7 +161,7 @@ export class PixiAppManager {
     /**
      * Get the PixiJS Application instance
      * @returns {PIXI.Application}
-     */ // <-- Note: Return type annotation still uses PIXI.Application, which is fine.
+     */
     getApp() {
         return this.app;
     }

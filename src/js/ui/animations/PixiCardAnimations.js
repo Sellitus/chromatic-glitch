@@ -1,4 +1,4 @@
-import { TweenManager } from '../../engine/tween/TweenManager';
+import TweenManager from '../../engine/tween/TweenManager';
 import { Easing } from '../../engine/tween/Easing';
 
 /**
@@ -41,18 +41,16 @@ export class PixiCardAnimations {
 
         return new Promise(resolve => {
             // Position animation
-            this.tweenManager.create({
-                target: cardContainer.position,
-                duration: this.durations.draw,
+            this.tweenManager.createTween(cardContainer.position, {
+                duration: this.durations.draw / 1000,
                 easing: this.curves.draw,
                 from: { x: startPos.x, y: startPos.y },
                 to: { x: endPos.x, y: endPos.y }
             });
 
             // Scale and rotation animation
-            this.tweenManager.create({
-                target: cardContainer,
-                duration: this.durations.draw,
+            this.tweenManager.createTween(cardContainer, {
+                duration: this.durations.draw / 1000,
                 easing: this.curves.draw,
                 from: { 
                     scale: { x: 0.8, y: 0.8 },
@@ -90,9 +88,9 @@ export class PixiCardAnimations {
 
             let progress = 0;
             
-            this.tweenManager.create({
+            this.tweenManager.createTween(cardContainer.position, {
                 target: { progress: 0 },
-                duration: this.durations.play,
+                duration: this.durations.play / 1000,
                 easing: this.curves.play,
                 to: { progress: 1 },
                 onUpdate: (obj) => {
@@ -112,9 +110,9 @@ export class PixiCardAnimations {
             });
 
             // Add a slight rotation during the animation
-            this.tweenManager.create({
+            this.tweenManager.createTween(cardContainer, {
                 target: cardContainer,
-                duration: this.durations.play,
+                duration: this.durations.play / 1000,
                 easing: this.curves.play,
                 to: { rotation: 0.5 }
             });
@@ -135,9 +133,8 @@ export class PixiCardAnimations {
 
         return new Promise(resolve => {
             // Quick movement toward discard pile while rotating and fading
-            this.tweenManager.create({
-                target: cardContainer.position,
-                duration: this.durations.discard,
+            this.tweenManager.createTween(cardContainer.position, {
+                duration: this.durations.discard / 1000,
                 easing: this.curves.discard,
                 to: {
                     x: discardPilePos.x,
@@ -145,9 +142,8 @@ export class PixiCardAnimations {
                 }
             });
 
-            this.tweenManager.create({
-                target: cardContainer,
-                duration: this.durations.discard,
+            this.tweenManager.createTween(cardContainer, {
+                duration: this.durations.discard / 1000,
                 easing: this.curves.discard,
                 to: {
                     rotation: (Math.random() - 0.5) * 2, // Random rotation
@@ -167,9 +163,8 @@ export class PixiCardAnimations {
      */
     animateCardMove(cardContainer, targetPos) {
         return new Promise(resolve => {
-            this.tweenManager.create({
-                target: cardContainer.position,
-                duration: this.durations.hover,
+            this.tweenManager.createTween(cardContainer.position, {
+                duration: this.durations.hover / 1000,
                 easing: this.curves.hover,
                 to: { x: targetPos.x, y: targetPos.y },
                 onComplete: resolve

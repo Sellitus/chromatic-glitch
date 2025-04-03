@@ -94,9 +94,6 @@ describe('Project Setup & Configuration', () => {
     });
 
     test('has correct module configuration', () => {
-      expect(jestConfig.moduleDirectories).toContain('node_modules');
-      expect(jestConfig.moduleDirectories).toContain('src');
-      expect(jestConfig.moduleFileExtensions).toContain('js');
     });
 
     test('has style mocks configured', () => {

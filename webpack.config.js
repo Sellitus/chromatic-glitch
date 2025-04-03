@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: 'development',
@@ -35,23 +36,18 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html'
-    })
+    }),
+    new CopyPlugin({
+      patterns: [
+        // Copy assets directory to dist/assets
+        { from: 'src/assets', to: 'assets' }, 
+      ],
+    }),
   ],
   devServer: {
-    static: [ // Use an array to serve multiple directories
-      {
-        // Serve files from 'dist' - contains bundle.js and index.html (via plugin)
-        directory: path.join(__dirname, 'dist'),
-        publicPath: '/', // Serve bundle.js at the root
-      },
-      {
-        // Serve files from 'src' - needed for assets like manifest.json
-        directory: path.join(__dirname, 'src'),
-        publicPath: '/', // Make assets accessible directly (e.g., /assets/manifest.json)
-        // Note: This might serve index.html from src if not careful, but
-        // historyApiFallback: true should prioritize the one in dist.
-      },
-    ],
+    static: {
+      directory: path.join(__dirname, 'dist'), // Serve only the dist directory
+    },
     compress: true,
     port: 9000,
     hot: true,

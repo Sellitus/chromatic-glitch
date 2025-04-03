@@ -1,4 +1,4 @@
-import { filters } from 'pixi.js';
+import { BlurFilter, ColorMatrixFilter } from 'pixi.js';
 
 /**
  * Manages visual effects for cards using PixiJS
@@ -25,16 +25,13 @@ export class PixiCardEffects {
      */
     applyHoverEffect(cardContainer) {
         // Create a glow filter
-        const glowFilter = new filters.GlowFilter({
-            distance: 15,
-            outerStrength: 1.5,
-            innerStrength: 0.5,
-            color: this.colors.hover,
-            quality: 0.5
-        });
+        const glowFilter = new BlurFilter(15);
+        glowFilter.tint = 0x6495ED; // Cornflower blue for better visibility
+        glowFilter.alpha = 0.7;
 
-        // Scale up slightly
-        cardContainer.scale.set(1.1);
+        // Scale up and lift card
+        cardContainer.scale.set(1.2);
+        cardContainer.position.y -= 40; // Lift card up when hovered
         
         // Add the glow
         cardContainer.filters = cardContainer.filters || [];
@@ -48,11 +45,12 @@ export class PixiCardEffects {
     removeHoverEffect(cardContainer) {
         // Reset scale
         cardContainer.scale.set(1.0);
+        cardContainer.position.y += 40; // Return to original position
         
         // Remove glow filter
         if (cardContainer.filters) {
             cardContainer.filters = cardContainer.filters.filter(
-                filter => !(filter instanceof filters.GlowFilter)
+                filter => !(filter instanceof BlurFilter)
             );
         }
     }
@@ -63,17 +61,13 @@ export class PixiCardEffects {
      */
     applySelectionEffect(cardContainer) {
         // Create a highlight filter
-        const highlightFilter = new filters.ColorMatrixFilter();
+        const highlightFilter = new ColorMatrixFilter();
         highlightFilter.brightness(1.2);
         
         // Add outline glow
-        const glowFilter = new filters.GlowFilter({
-            distance: 10,
-            outerStrength: 2,
-            innerStrength: 1,
-            color: this.colors.selected,
-            quality: 0.5
-        });
+        const glowFilter = new BlurFilter(10);
+        glowFilter.tint = this.colors.selected;
+        glowFilter.alpha = 0.7;
         
         // Apply filters
         cardContainer.filters = cardContainer.filters || [];
@@ -87,8 +81,8 @@ export class PixiCardEffects {
     removeSelectionEffect(cardContainer) {
         if (cardContainer.filters) {
             cardContainer.filters = cardContainer.filters.filter(
-                filter => !(filter instanceof filters.ColorMatrixFilter) &&
-                         !(filter instanceof filters.GlowFilter)
+                filter => !(filter instanceof ColorMatrixFilter) &&
+                         !(filter instanceof BlurFilter)
             );
         }
     }
@@ -99,7 +93,7 @@ export class PixiCardEffects {
      */
     applyDisabledEffect(cardContainer) {
         // Create grayscale and darken filters
-        const grayscaleFilter = new filters.ColorMatrixFilter();
+        const grayscaleFilter = new ColorMatrixFilter();
         grayscaleFilter.desaturate();
         grayscaleFilter.brightness(0.7);
         
@@ -118,7 +112,7 @@ export class PixiCardEffects {
     removeDisabledEffect(cardContainer) {
         if (cardContainer.filters) {
             cardContainer.filters = cardContainer.filters.filter(
-                filter => !(filter instanceof filters.ColorMatrixFilter)
+                filter => !(filter instanceof ColorMatrixFilter)
             );
         }
         cardContainer.alpha = 1.0;
@@ -132,13 +126,9 @@ export class PixiCardEffects {
     applyRarityGlow(cardContainer, rarity) {
         const glowColor = this.colors.glow[rarity.toLowerCase()] || this.colors.glow.common;
         
-        const glowFilter = new filters.GlowFilter({
-            distance: 15,
-            outerStrength: 1,
-            innerStrength: 0.3,
-            color: glowColor,
-            quality: 0.5
-        });
+        const glowFilter = new BlurFilter(15);
+        glowFilter.tint = glowColor;
+        glowFilter.alpha = 0.3;
         
         cardContainer.filters = cardContainer.filters || [];
         cardContainer.filters.push(glowFilter);
@@ -150,13 +140,9 @@ export class PixiCardEffects {
      * @param {number} color The color to highlight with
      */
     applyHighlight(cardContainer, color) {
-        const highlightFilter = new filters.GlowFilter({
-            distance: 8,
-            outerStrength: 2,
-            innerStrength: 0.5,
-            color: color,
-            quality: 0.5
-        });
+        const highlightFilter = new BlurFilter(8);
+        highlightFilter.tint = color;
+        highlightFilter.alpha = 0.5;
         
         cardContainer.filters = cardContainer.filters || [];
         cardContainer.filters.push(highlightFilter);

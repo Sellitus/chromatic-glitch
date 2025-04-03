@@ -23,16 +23,16 @@ export class PixiCardRenderer {
             cost: 0x8b4513,
             type: {
                 [CardType.ATTACK]: 0x8b0000,   // Dark red
-                [CardType.SKILL]: 0x006400,    // Dark green
-                [CardType.POWER]: 0x4b0082,    // Dark purple
+                [CardType.SKILL]: 0x228b22,    // Forest green
+                [CardType.POWER]: 0x8a2be2,    // Blue violet
                 [CardType.STATUS]: 0x696969,   // Dark gray
                 [CardType.CURSE]: 0x800000     // Maroon
             },
             rarity: {
                 [CardRarity.COMMON]: 0x505050,   // Gray
-                [CardRarity.UNCOMMON]: 0x1e90ff, // Blue
+                [CardRarity.UNCOMMON]: 0x4169e1, // Royal blue
                 [CardRarity.RARE]: 0xffd700,     // Gold
-                [CardRarity.SPECIAL]: 0xff1493   // Pink
+                [CardRarity.SPECIAL]: 0xda70d6   // Orchid
             }
         };
 
@@ -41,21 +41,27 @@ export class PixiCardRenderer {
             title: {
                 fontFamily: 'Arial',
                 fontSize: 18,
-                fill: this.colors.text,
-                align: 'center'
+                fill: 0xffffff,
+                align: 'center',
+                stroke: 0x000000,
+                strokeThickness: 2
             },
             cost: {
                 fontFamily: 'Arial',
                 fontSize: 24,
-                fill: this.colors.text,
-                align: 'center'
+                fill: 0xffffff,
+                align: 'center',
+                stroke: 0x000000,
+                strokeThickness: 3
             },
             description: {
                 fontFamily: 'Arial',
                 fontSize: 14,
-                fill: this.colors.text,
+                fill: 0xffffff,
                 align: 'center',
                 wordWrap: true,
+                stroke: 0x000000,
+                strokeThickness: 1,
                 wordWrapWidth: this.cardWidth - 20
             }
         };
@@ -114,13 +120,17 @@ export class PixiCardRenderer {
     _createBackground(cardType) {
         const graphics = new Graphics();
         graphics.beginFill(this.colors.background);
-        graphics.drawRoundedRect(0, 0, this.cardWidth, this.cardHeight, 10);
+        graphics.drawRoundedRect(0, 0, this.cardWidth, this.cardHeight, 15);
         graphics.endFill();
         
         // Add type-specific overlay
         graphics.beginFill(this.colors.type[cardType] || this.colors.type[CardType.STATUS], 0.2);
-        graphics.drawRoundedRect(0, 0, this.cardWidth, this.cardHeight, 10);
+        graphics.drawRoundedRect(0, 0, this.cardWidth, this.cardHeight, 15);
         graphics.endFill();
+        
+        // Add inner glow
+        graphics.lineStyle(2, this.colors.type[cardType] || this.colors.type[CardType.STATUS], 0.3);
+        graphics.drawRoundedRect(5, 5, this.cardWidth - 10, this.cardHeight - 10, 12);
         
         return graphics;
     }
@@ -132,8 +142,8 @@ export class PixiCardRenderer {
     _createBorder(rarity) {
         const graphics = new Graphics();
         const borderColor = this.colors.rarity[rarity] || this.colors.rarity[CardRarity.COMMON];
-        graphics.lineStyle(2, borderColor);
-        graphics.drawRoundedRect(0, 0, this.cardWidth, this.cardHeight, 10);
+        graphics.lineStyle(3, borderColor);
+        graphics.drawRoundedRect(0, 0, this.cardWidth, this.cardHeight, 15);
         return graphics;
     }
 
@@ -144,11 +154,24 @@ export class PixiCardRenderer {
     _createCostDisplay(cost) {
         const container = new Container();
         
-        // Circle background
+        // Main circle
         const circle = new Graphics();
+        const radius = 22;
+        
+        // Outer glow
+        circle.lineStyle(3, 0xffd700, 0.3);
+        circle.drawCircle(0, 0, radius + 2);
+        
+        // Main circle fill
         circle.beginFill(this.colors.cost);
-        circle.drawCircle(0, 0, 20);
+        circle.lineStyle(2, 0x000000, 1);
+        circle.drawCircle(0, 0, radius);
         circle.endFill();
+        
+        // Inner highlight
+        circle.lineStyle(1, 0xffffff, 0.2);
+        circle.drawCircle(0, 0, radius - 4);
+        
         container.addChild(circle);
         
         // Cost text
@@ -176,19 +199,19 @@ export class PixiCardRenderer {
     _createArtPlaceholder() {
         const graphics = new Graphics();
         const width = this.cardWidth - 40;
-        const height = 80;
+        const height = 100;
         
-        // Draw placeholder rectangle
-        graphics.beginFill(0x333333);
-        graphics.drawRect(-width/2, -height/2, width, height);
+        // Background with gradient effect
+        graphics.beginFill(0x222222);
+        graphics.drawRoundedRect(-width/2, -height/2, width, height, 8);
         graphics.endFill();
         
-        // Add crossed lines
-        graphics.lineStyle(1, 0x444444);
-        graphics.moveTo(-width/2, -height/2);
-        graphics.lineTo(width/2, height/2);
-        graphics.moveTo(width/2, -height/2);
-        graphics.lineTo(-width/2, height/2);
+        // Add a subtle pattern
+        graphics.lineStyle(1, 0x333333, 0.5);
+        for (let i = -width/2; i < width/2; i += 20) {
+            graphics.moveTo(i, -height/2);
+            graphics.lineTo(i + height, height/2);
+        }
         
         return graphics;
     }

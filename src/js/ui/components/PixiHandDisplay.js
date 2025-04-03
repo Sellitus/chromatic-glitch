@@ -25,11 +25,11 @@ export class PixiHandDisplay extends Container {
         this.cards = new Map(); // Map of card.id to container
         this.selectedCard = null;
         
-        // Hand layout properties
-        this.cardSpacing = 80; // Horizontal space between cards
-        this.cardOverlap = 0.8; // How much cards overlap (1 = no overlap)
-        this.arcHeight = 50; // Height of hand arc
-        this.cardScale = 0.8; // Base scale for cards in hand
+        // Enhanced hand layout properties
+        this.cardSpacing = 110; // More space between cards
+        this.cardOverlap = 0.85; // Slightly less overlap
+        this.arcHeight = 70; // Higher arc for more dramatic curve
+        this.cardScale = 0.7; // Slightly smaller cards to fit better
         
         // Interaction state
         this.isDragging = false;

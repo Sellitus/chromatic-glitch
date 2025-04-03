@@ -1,17 +1,17 @@
+/** @type {import('jest').Config} */
 module.exports = {
   testEnvironment: 'jsdom',
-  moduleDirectories: ['node_modules', 'src'],
-  moduleFileExtensions: ['js'],
+  setupFiles: ['./jest.setup.js'],
   moduleNameMapper: {
     '\\.(css|less|sass|scss)$': '<rootDir>/__mocks__/styleMock.js',
+    '\\.(gif|ttf|eot|svg|png)$': '<rootDir>/__mocks__/fileMock.js'
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transform: {
-    '^.+\\.js$': 'babel-jest',
+    '^.+\\.js$': 'babel-jest'
   },
-  // resetMocks: true, // Reverted - caused issues with mock implementations
-  collectCoverage: true,
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov'],
-  testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
+  roots: ['<rootDir>/src/', '<rootDir>/tests/'],
+  testMatch: [
+    '**/__tests__/**/*.js',
+    '**/?(*.)+(spec|test).js'
+  ],
 };
